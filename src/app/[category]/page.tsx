@@ -3,16 +3,16 @@ import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import { CATEGORIES, Product } from '@/data/products';
 import CategoryContent from './CategoryContent';
-import fs from 'fs';
-import path from 'path';
+import dbConnect from '@/lib/db';
+import ProductModel from '@/models/Product';
 
-const DATA_FILE = path.join(process.cwd(), 'src', 'data', 'products-data.json');
-
-function getProducts(): Product[] {
+async function getProducts(): Promise<Product[]> {
   try {
-    if (!fs.existsSync(DATA_FILE)) return [];
-    return JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
-  } catch {
+    await dbConnect();
+    const products = await ProductModel.find({}).lean();
+    return JSON.parse(JSON.stringify(products)) as Product[];
+  } catch (error) {
+    console.error("Failed to fetch products:", error);
     return [];
   }
 }
@@ -57,7 +57,7 @@ export default async function CategoryPage({ params }: Props) {
     notFound();
   }
 
-  const allProducts = getProducts();
+  const allProducts = await getProducts();
   const categoryProducts = allProducts.filter(
     (product) => product.categoryId === category.id
   );
