@@ -41,15 +41,24 @@ export default function ProductForm({ initial, onSave, onCancel }: Props) {
     const files = e.target.files;
     if (!files || files.length === 0) return;
     setUploading(true);
-    const fd = new FormData();
-    Array.from(files).forEach(f => fd.append("file", f));
-    const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
-    const data = await res.json();
-    if (data.urls) {
-      setForm(f => ({ ...f, images: [...f.images, ...data.urls] }));
-      setImagePreviews(p => [...p, ...data.urls]);
+    try {
+      const fd = new FormData();
+      Array.from(files).forEach(f => fd.append("file", f));
+      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+      if (!res.ok) {
+        throw new Error("Lỗi upload từ server");
+      }
+      const data = await res.json();
+      if (data.urls) {
+        setForm(f => ({ ...f, images: [...f.images, ...data.urls] }));
+        setImagePreviews(p => [...p, ...data.urls]);
+      }
+    } catch (err) {
+      console.error("Upload error:", err);
+      alert("Lỗi tải ảnh lên! Bạn cần cấu hình Vercel Blob Storage trong Vercel Dashboard để upload ảnh khi deploy.");
+    } finally {
+      setUploading(false);
     }
-    setUploading(false);
   };
 
   const removeImage = (idx: number) => {
